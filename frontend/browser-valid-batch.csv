@@ -1,0 +1,3 @@
+﻿transaction_reference,amount,currency,merchant,merchant_category,customer_id,transaction_type,transaction_timestamp,location,payment_method,status
+browser-valid-batch-1,125.00,USD,Northwind Retail,Electronics,,purchase,2026-08-12T10:00:00Z,Boston,card,pending
+browser-valid-batch-2,320.50,USD,Harbor Goods,Travel,,wire,2026-08-12T11:15:00Z,Seattle,bank,approved
