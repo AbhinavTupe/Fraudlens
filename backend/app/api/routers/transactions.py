@@ -23,6 +23,7 @@ from app.schemas.transaction import (
     TransactionWorkspaceResponse,
 )
 from app.schemas.prediction import PredictionRead
+from app.schemas.explanation import TransactionExplanation
 from app.services.fraud_detection_service import FraudDetectionService
 from app.services.transaction_service import DuplicateTransactionError, TransactionNotFoundError, TransactionService
 
@@ -279,6 +280,21 @@ def evaluate_transaction(
     try:
         _, prediction, _ = service.evaluate_transaction(db, transaction_id)
         return prediction
+    except TransactionNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/{transaction_id}/explanation", response_model=TransactionExplanation)
+def explain_transaction(
+    db: Annotated[Session, Depends(get_db)],
+    _: Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.ANALYST, UserRole.INVESTIGATOR, UserRole.REVIEWER))],
+    transaction_id: UUID,
+) -> TransactionExplanation:
+    service = FraudDetectionService()
+    try:
+        return service.explain_transaction(db, transaction_id)
     except TransactionNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:

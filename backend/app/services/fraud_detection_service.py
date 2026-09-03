@@ -42,6 +42,14 @@ class FraudDetectionService:
             return float(model_obj.predict([features])[0])
         raise ValueError("Loaded model does not expose a supported inference interface")
 
+    def _get_threshold(self, model_meta) -> float:
+        threshold = getattr(model_meta, "threshold", None)
+        if threshold is None:
+            threshold = getattr(self.ml_model_service.settings, "FRAUD_THRESHOLD", None)
+        if threshold is None:
+            raise ValueError("No fraud threshold configured for inference")
+        return float(threshold)
+
     def evaluate_transaction(self, db: Session, transaction_id: UUID) -> tuple[Transaction, Prediction, Optional[FraudAlert]]:
         if db.in_transaction():
             db.commit()
@@ -55,11 +63,7 @@ class FraudDetectionService:
             model_meta, model_obj = self.ml_model_service.get_model_for_inference(db)
             features = self._prepare_features(transaction)
             fraud_probability = self._infer_probability(model_obj, features)
-            threshold = getattr(model_meta, "threshold", None)
-            if threshold is None:
-                threshold = getattr(self.ml_model_service.settings, "FRAUD_THRESHOLD", None)
-            if threshold is None:
-                raise ValueError("No fraud threshold configured for inference")
+            threshold = self._get_threshold(model_meta)
 
             decision = fraud_probability >= float(threshold)
             prediction_payload = {
@@ -67,7 +71,7 @@ class FraudDetectionService:
                 "fraud_probability": fraud_probability,
                 "predicted_label": "fraud" if decision else "legit",
                 "model_version": model_meta.version,
-                "threshold_used": float(threshold),
+                "threshold_used": threshold,
             }
             prediction = self.prediction_repo.create(db, prediction_payload, commit=False)
 
@@ -86,6 +90,25 @@ class FraudDetectionService:
                 self.transaction_service.update_transaction_status(db, transaction.id, TransactionStatus.REQUIRES_REVIEW, commit=False)
 
             return transaction, prediction, alert
+
+    def explain_transaction(self, db: Session, transaction_id: UUID) -> dict:
+        transaction = self.transaction_service.get_transaction(db, transaction_id)
+        model_meta, model_obj = self.ml_model_service.get_model_for_inference(db)
+        if not hasattr(model_obj, "explain"):
+            raise ValueError("Loaded model does not support model-rule explanations")
+
+        explanation = model_obj.explain(self._prepare_features(transaction))
+        threshold = self._get_threshold(model_meta)
+        probability = float(explanation["fraud_probability"])
+        return {
+            "transaction_id": transaction.id,
+            "model_version": model_meta.version,
+            "threshold": threshold,
+            "raw_score": float(explanation["raw_score"]),
+            "fraud_probability": probability,
+            "decision": "fraud" if probability >= threshold else "legit",
+            "contributions": explanation["contributions"],
+        }
 
     def _classify_severity(self, fraud_probability: float) -> AlertSeverity:
         if fraud_probability >= 0.9:

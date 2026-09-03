@@ -25,7 +25,7 @@ import { PolicyEvaluationPanel } from './PolicyEvaluationPanel';
 import { cn, formatCurrency } from '../../utils/cn';
 import { bandMeta, decisionMeta, riskBand } from '../../utils/labels';
 import type { Transaction } from '../../types/fraud';
-import { evaluateTransaction, type TransactionEvaluation, updateTransactionStatus, type TransactionStatusValue, getFraudAlerts, updateFraudAlertStatus, openInvestigation, type FraudAlertItem } from '../../lib/api';
+import { evaluateTransaction, type TransactionEvaluation, updateTransactionStatus, type TransactionStatusValue, getFraudAlerts, updateFraudAlertStatus, openInvestigation, type FraudAlertItem, getTransactionExplanation, type TransactionExplanation } from '../../lib/api';
 
 interface TransactionDrawerProps {
   transaction: Transaction | null;
@@ -42,6 +42,9 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [evaluation, setEvaluation] = useState<TransactionEvaluation | null>(null);
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<TransactionExplanation | null>(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
+  const [explanationError, setExplanationError] = useState<string | null>(null);
   const [persistedStatus, setPersistedStatus] = useState<string>(transaction?.status ?? 'pending');
   const [fraudAlert, setFraudAlert] = useState<FraudAlertItem | null>(null);
   const [updatingAlert, setUpdatingAlert] = useState(false);
@@ -67,6 +70,29 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
       .catch(() => {
         if (!active) return;
         setFraudAlert(null);
+      });
+
+    return () => { active = false; };
+  }, [transaction]);
+
+  useEffect(() => {
+    let active = true;
+    setExplanation(null);
+    setExplanationError(null);
+    setExplanationLoading(Boolean(transaction));
+
+    if (!transaction) return () => { active = false; };
+
+    getTransactionExplanation(transaction.id)
+      .then((result) => {
+        if (active) setExplanation(result);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setExplanationError(error instanceof Error ? error.message : 'Could not load model explanation');
+      })
+      .finally(() => {
+        if (active) setExplanationLoading(false);
       });
 
     return () => { active = false; };
@@ -319,6 +345,35 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
             ) : null}
             {evaluationError ? (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">{evaluationError}</div>
+            ) : null}
+            {explanationLoading ? (
+              <div className="mt-4 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-500">Loading model explanation...</div>
+            ) : explanationError ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">{explanationError}</div>
+            ) : explanation ? (
+              <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500">
+                  <span>Model-rule explanation · raw score {explanation.raw_score.toFixed(2)}</span>
+                  <span>Threshold {explanation.threshold.toFixed(2)} · {explanation.decision}</span>
+                </div>
+                <p className="mt-2 text-[13px] text-gray-700">
+                  Current fraud probability: <span className="font-semibold">{(explanation.fraud_probability * 100).toFixed(2)}%</span>
+                </p>
+                {explanation.contributions.length === 0 ? (
+                  <p className="mt-2 text-[13px] text-gray-600">No scoring rules contributed to this result.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {explanation.contributions.map((contribution) => (
+                      <li key={`${contribution.feature}-${contribution.reason}`} className="flex items-start justify-between gap-3 text-[13px]">
+                        <span className="text-gray-700">{contribution.reason}</span>
+                        <span className={cn('shrink-0 font-semibold', contribution.contribution > 0 ? 'text-red-600' : 'text-emerald-600')}>
+                          {contribution.contribution > 0 ? '+' : ''}{contribution.contribution.toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             ) : null}
             <p className="mt-4 border-t border-gray-200 pt-3 text-[13px] leading-6 text-gray-700">
               Sentinel v4.2 scored this transaction <span className="font-semibold">{activeRiskScore}/100</span>,

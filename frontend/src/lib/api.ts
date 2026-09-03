@@ -123,6 +123,27 @@ export function evaluateTransaction(transactionId: string) {
   });
 }
 
+export type ExplanationContribution = {
+  feature: string;
+  value: unknown;
+  contribution: number;
+  reason: string;
+};
+
+export type TransactionExplanation = {
+  transaction_id: string;
+  model_version: string | null;
+  threshold: number;
+  raw_score: number;
+  fraud_probability: number;
+  decision: 'fraud' | 'legit';
+  contributions: ExplanationContribution[];
+};
+
+export function getTransactionExplanation(transactionId: string) {
+  return apiFetch<TransactionExplanation>(`/api/transactions/${transactionId}/explanation`);
+}
+
 export type TransactionStatusValue = 'pending' | 'approved' | 'declined' | 'requires_review';
 
 export function updateTransactionStatus(transactionId: string, status: TransactionStatusValue) {
