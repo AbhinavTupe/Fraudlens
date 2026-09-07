@@ -214,3 +214,14 @@ python test_evaluation_history.py
 ## Security Notes
 
 Use a strong local `SECRET_KEY`, keep database credentials private, and require a valid JWT for protected endpoints. Do not expose `.env` values in logs, tests, screenshots, or documentation.
+## Contributing
+
+Contributions to FraudLens are welcome.
+
+Recommended workflow:
+
+1. Create a feature branch from `main`.
+2. Make focused changes related to the contribution.
+3. Run the relevant tests or build checks.
+4. Open a pull request against `main`.
+5. Review the changes before merging.
