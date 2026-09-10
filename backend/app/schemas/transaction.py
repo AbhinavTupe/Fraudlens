@@ -17,19 +17,20 @@ class TransactionBase(BaseModel):
 
     transaction_reference: Annotated[str, Field(...)]
     amount: Annotated[Decimal, Field(...)]
-    currency: Annotated[str, Field(...)]
+    currency: Optional[Annotated[str, Field(default=None)]] = None
     merchant: Optional[Annotated[str, Field(default=None)]] = None
     merchant_category: Optional[Annotated[str, Field(default=None)]] = None
     customer_id: Optional[Annotated[UUID, Field(default=None)]] = None
     transaction_type: Optional[Annotated[str, Field(default=None)]] = None
-    transaction_timestamp: Annotated[datetime, Field(...)]
+    transaction_timestamp: Optional[Annotated[datetime, Field(default=None)]] = None
     location: Optional[Annotated[str, Field(default=None)]] = None
     payment_method: Optional[Annotated[str, Field(default=None)]] = None
     status: Annotated[TransactionStatus, Field(...)]
 
 
 class TransactionCreate(TransactionBase):
-    pass
+    currency: Annotated[str, Field(...)]
+    transaction_timestamp: Annotated[datetime, Field(...)]
 
 
 class TransactionUpdate(BaseModel):
@@ -61,13 +62,13 @@ class TransactionWorkspaceItem(BaseModel):
     id: Annotated[UUID, Field(...)]
     transaction_reference: Annotated[str, Field(...)]
     amount: Annotated[Decimal, Field(...)]
-    currency: Annotated[str, Field(...)]
+    currency: Optional[Annotated[str, Field(default=None)]] = None
     merchant: Optional[Annotated[str, Field(default=None)]] = None
     merchant_category: Optional[Annotated[str, Field(default=None)]] = None
     customer_id: Optional[Annotated[UUID, Field(default=None)]] = None
     customer_name: Optional[Annotated[str, Field(default=None)]] = None
     transaction_type: Optional[Annotated[str, Field(default=None)]] = None
-    transaction_timestamp: Annotated[datetime, Field(...)]
+    transaction_timestamp: Optional[Annotated[datetime, Field(default=None)]] = None
     location: Optional[Annotated[str, Field(default=None)]] = None
     payment_method: Optional[Annotated[str, Field(default=None)]] = None
     status: Annotated[TransactionStatus, Field(...)]

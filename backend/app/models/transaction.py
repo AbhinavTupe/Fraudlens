@@ -25,7 +25,7 @@ class Transaction(Base, BaseModelMixin):
 
     transaction_reference: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
-    currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     merchant: Mapped[str | None] = mapped_column(String(255), nullable=True)
     merchant_category: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
@@ -36,7 +36,7 @@ class Transaction(Base, BaseModelMixin):
     )
 
     transaction_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    transaction_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    transaction_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     payment_method: Mapped[str | None] = mapped_column(String(100), nullable=True)
 

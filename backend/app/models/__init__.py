@@ -10,6 +10,8 @@ from app.models.case_comment import CaseComment
 from app.models.ml_model import MLModel
 from app.models.training_job import TrainingJob
 from app.models.feature_importance import FeatureImportance
+from app.models.ieee_cis_source_transaction import IeeeCisSourceTransaction
+from app.models.ml_feature_record import MLFeatureRecord
 
 __all__ = [
 	"ActivityLog",
@@ -24,4 +26,6 @@ __all__ = [
 	"MLModel",
 	"TrainingJob",
 	"FeatureImportance",
+	"IeeeCisSourceTransaction",
+	"MLFeatureRecord",
 ]

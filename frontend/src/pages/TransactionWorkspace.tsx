@@ -68,7 +68,7 @@ function mapWorkspaceItem(item: TransactionWorkspaceItem): Transaction {
   return {
     id: item.id,
     reference: item.transaction_reference,
-    timestamp: item.transaction_timestamp,
+    timestamp: item.transaction_timestamp ?? '',
     amount: Number(item.amount),
     merchant: item.merchant ?? 'Unknown merchant',
     merchantCategory: item.merchant_category ?? 'General',
@@ -90,7 +90,7 @@ function mapWorkspaceItem(item: TransactionWorkspaceItem): Transaction {
       id: item.id,
       title: 'Transaction loaded from workspace',
       detail: `Workspace row for ${item.transaction_reference}`,
-      timestamp: item.transaction_timestamp,
+      timestamp: item.transaction_timestamp ?? '',
       actor: 'FraudLens API',
       kind: 'system'
     }]
@@ -107,7 +107,7 @@ function mapTransactionDetail(item: TransactionDetail): Transaction {
   return {
     id: item.id,
     reference: item.transaction_reference,
-    timestamp: item.transaction_timestamp,
+    timestamp: item.transaction_timestamp ?? '',
     amount: Number(item.amount),
     merchant: item.merchant ?? 'Unknown merchant',
     merchantCategory: item.merchant_category ?? 'General',
@@ -129,7 +129,7 @@ function mapTransactionDetail(item: TransactionDetail): Transaction {
       id: item.id,
       title: 'Transaction detail loaded',
       detail: `Endpoint response for ${item.transaction_reference}`,
-      timestamp: item.transaction_timestamp,
+      timestamp: item.transaction_timestamp ?? '',
       actor: 'FraudLens API',
       kind: 'system'
     }]
@@ -470,7 +470,7 @@ export function TransactionWorkspace() {
                     </Td>
                     <Td className="text-gray-600">{transaction.assignee ?? '—'}</Td>
                     <Td align="right" className="tabular text-xs text-gray-500">
-                      {new Date(transaction.timestamp).toISOString().slice(11, 16)} UTC
+                      {transaction.timestamp ? `${new Date(transaction.timestamp).toISOString().slice(11, 16)} UTC` : 'Unavailable'}
                     </Td>
                   </Tr>
                 ))}

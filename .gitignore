@@ -18,3 +18,10 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local IEEE-CIS raw dataset archives (keep files on disk, ignore in Git)
+/train_transaction.csv.zip
+/train_identity.csv.zip
+/test_transaction.csv.zip
+/test_identity.csv.zip
+/sample_submission.csv.zip

@@ -53,13 +53,13 @@ export type TransactionWorkspaceItem = {
   id: string;
   transaction_reference: string;
   amount: number | string;
-  currency: string;
+  currency: string | null;
   merchant: string | null;
   merchant_category: string | null;
   customer_id: string | null;
   customer_name: string | null;
   transaction_type: string | null;
-  transaction_timestamp: string;
+  transaction_timestamp: string | null;
   location: string | null;
   payment_method: string | null;
   status: string;
@@ -85,12 +85,12 @@ export type TransactionDetail = {
   id: string;
   transaction_reference: string;
   amount: number | string;
-  currency: string;
+  currency: string | null;
   merchant: string | null;
   merchant_category: string | null;
   customer_id: string | null;
   transaction_type: string | null;
-  transaction_timestamp: string;
+  transaction_timestamp: string | null;
   location: string | null;
   payment_method: string | null;
   status: string;
@@ -124,19 +124,21 @@ export function evaluateTransaction(transactionId: string) {
 }
 
 export type ExplanationContribution = {
-  feature: string;
-  value: unknown;
-  contribution: number;
-  reason: string;
+  feature_name: string;
+  feature_value: number;
+  shap_value: number;
+  direction: 'fraud' | 'legitimate' | 'neutral';
 };
 
 export type TransactionExplanation = {
   transaction_id: string;
-  model_version: string | null;
+  model_version: string;
+  contract_version: string;
   threshold: number;
-  raw_score: number;
   fraud_probability: number;
   decision: 'fraud' | 'legit';
+  base_value: number;
+  output_space: string;
   contributions: ExplanationContribution[];
 };
 

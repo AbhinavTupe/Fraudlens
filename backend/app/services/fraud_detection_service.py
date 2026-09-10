@@ -8,21 +8,32 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.crud.fraud_alert import FraudAlertRepository
+from app.crud.ml_feature_record import MLFeatureRecordRepository
 from app.crud.prediction import PredictionRepository
 from app.crud.transaction import TransactionRepository
 from app.models import FraudAlert, Prediction, Transaction
 from app.models.enums import AlertSeverity, AlertStatus, TransactionStatus
 from app.services.ml_model_service import MLModelService
 from app.services.transaction_service import TransactionService
+from app.ml.shap_explainer import FrozenV22ModelExplainer
+
+
+FEATURE_CONTRACT_VERSION = "fraudlens-v2.2.1"
+
+
+class MLFeatureRecordNotFoundError(Exception):
+    pass
 
 
 class FraudDetectionService:
-    def __init__(self, transaction_repo: Optional[TransactionRepository] = None, prediction_repo: Optional[PredictionRepository] = None, fraud_alert_repo: Optional[FraudAlertRepository] = None, ml_model_service: Optional[MLModelService] = None, transaction_service: Optional[TransactionService] = None) -> None:
+    def __init__(self, transaction_repo: Optional[TransactionRepository] = None, prediction_repo: Optional[PredictionRepository] = None, fraud_alert_repo: Optional[FraudAlertRepository] = None, ml_model_service: Optional[MLModelService] = None, transaction_service: Optional[TransactionService] = None, ml_feature_repo: Optional[MLFeatureRecordRepository] = None, shap_explainer: Optional[FrozenV22ModelExplainer] = None) -> None:
         self.transaction_repo = transaction_repo or TransactionRepository()
         self.prediction_repo = prediction_repo or PredictionRepository()
         self.fraud_alert_repo = fraud_alert_repo or FraudAlertRepository()
         self.ml_model_service = ml_model_service or MLModelService()
         self.transaction_service = transaction_service or TransactionService()
+        self.ml_feature_repo = ml_feature_repo or MLFeatureRecordRepository()
+        self.shap_explainer = shap_explainer or FrozenV22ModelExplainer()
 
     def _prepare_features(self, transaction: Transaction) -> dict:
         return {
@@ -93,21 +104,45 @@ class FraudDetectionService:
 
     def explain_transaction(self, db: Session, transaction_id: UUID) -> dict:
         transaction = self.transaction_service.get_transaction(db, transaction_id)
-        model_meta, model_obj = self.ml_model_service.get_model_for_inference(db)
-        if not hasattr(model_obj, "explain"):
-            raise ValueError("Loaded model does not support model-rule explanations")
+        feature_record = self.ml_feature_repo.get_by_transaction_contract(
+            db, transaction.id, FEATURE_CONTRACT_VERSION
+        )
+        if feature_record is None:
+            raise MLFeatureRecordNotFoundError(
+                f"No compatible ML feature record exists for transaction {transaction_id}"
+            )
 
-        explanation = model_obj.explain(self._prepare_features(transaction))
-        threshold = self._get_threshold(model_meta)
-        probability = float(explanation["fraud_probability"])
+        raw_features = {
+            "TransactionAmt": feature_record.transaction_amt,
+            "ProductCD": feature_record.product_cd,
+            **{f"C{i}": getattr(feature_record, f"c{i}") for i in range(1, 15)},
+        }
+        explanation = self.shap_explainer.explain_row(raw_features)
+        probability = float(explanation["model_probability"])
+        threshold = float(self.shap_explainer.threshold)
+        contributions = []
+        ranked_contributors = sorted(
+            explanation["top_contributors"],
+            key=lambda item: (-abs(float(item["shap_value"])), item["feature_name"]),
+        )
+        for item in ranked_contributors:
+            shap_value = float(item["shap_value"])
+            contributions.append({
+                "feature_name": item["feature_name"],
+                "feature_value": float(item["feature_value"]),
+                "shap_value": shap_value,
+                "direction": "fraud" if shap_value > 0 else "legitimate" if shap_value < 0 else "neutral",
+            })
         return {
             "transaction_id": transaction.id,
-            "model_version": model_meta.version,
+            "model_version": explanation["model_version"],
+            "contract_version": explanation["contract_version"],
             "threshold": threshold,
-            "raw_score": float(explanation["raw_score"]),
             "fraud_probability": probability,
-            "decision": "fraud" if probability >= threshold else "legit",
-            "contributions": explanation["contributions"],
+            "decision": "fraud" if explanation["model_prediction"] else "legit",
+            "base_value": float(explanation["base_value"]),
+            "output_space": "raw XGBoost margin (log-odds)",
+            "contributions": contributions,
         }
 
     def _classify_severity(self, fraud_probability: float) -> AlertSeverity:

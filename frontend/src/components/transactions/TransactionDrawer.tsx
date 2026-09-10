@@ -20,7 +20,6 @@ import { Button } from '../ui/Button';
 import { RiskScore } from '../ui/RiskScore';
 import { ProgressBar } from '../ui/ProgressBar';
 import { DecisionTimeline } from './DecisionTimeline';
-import { ExplanationCards } from './ExplanationCards';
 import { PolicyEvaluationPanel } from './PolicyEvaluationPanel';
 import { cn, formatCurrency } from '../../utils/cn';
 import { bandMeta, decisionMeta, riskBand } from '../../utils/labels';
@@ -79,9 +78,13 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
     let active = true;
     setExplanation(null);
     setExplanationError(null);
-    setExplanationLoading(Boolean(transaction));
+    const isBackendUuid = Boolean(transaction?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(transaction.id));
+    setExplanationLoading(isBackendUuid);
 
-    if (!transaction) return () => { active = false; };
+    if (!transaction || !isBackendUuid) {
+      if (transaction) setExplanationError('Explanation unavailable for this transaction.');
+      return () => { active = false; };
+    }
 
     getTransactionExplanation(transaction.id)
       .then((result) => {
@@ -89,7 +92,9 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
       })
       .catch((error) => {
         if (!active) return;
-        setExplanationError(error instanceof Error ? error.message : 'Could not load model explanation');
+        setExplanationError(error instanceof Error && error.message.includes('404')
+          ? 'Explanation unavailable for this transaction.'
+          : 'Could not load model explanation.');
       })
       .finally(() => {
         if (active) setExplanationLoading(false);
@@ -237,7 +242,7 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
             ['Channel', transaction.channel],
             ['Country', transaction.country],
             ['Device', transaction.device],
-            ['Received', `${new Date(transaction.timestamp).toUTCString().slice(5, 22)} UTC`],
+            ['Received', transaction.timestamp ? `${new Date(transaction.timestamp).toUTCString().slice(5, 22)} UTC` : 'Unavailable from source'],
             ['Assignee', transaction.assignee ?? 'Unassigned']].
             map(([label, value]) =>
             <div key={label} className="min-w-0">
@@ -353,26 +358,29 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
             ) : explanation ? (
               <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500">
-                  <span>Model-rule explanation · raw score {explanation.raw_score.toFixed(2)}</span>
-                  <span>Threshold {explanation.threshold.toFixed(2)} · {explanation.decision}</span>
+                  <span>SHAP explanation · {explanation.model_version}</span>
+                  <span>Threshold {(explanation.threshold * 100).toFixed(2)}% · {explanation.decision}</span>
                 </div>
                 <p className="mt-2 text-[13px] text-gray-700">
                   Current fraud probability: <span className="font-semibold">{(explanation.fraud_probability * 100).toFixed(2)}%</span>
                 </p>
-                {explanation.contributions.length === 0 ? (
-                  <p className="mt-2 text-[13px] text-gray-600">No scoring rules contributed to this result.</p>
-                ) : (
-                  <ul className="mt-2 space-y-2">
-                    {explanation.contributions.map((contribution) => (
-                      <li key={`${contribution.feature}-${contribution.reason}`} className="flex items-start justify-between gap-3 text-[13px]">
-                        <span className="text-gray-700">{contribution.reason}</span>
-                        <span className={cn('shrink-0 font-semibold', contribution.contribution > 0 ? 'text-red-600' : 'text-emerald-600')}>
-                          {contribution.contribution > 0 ? '+' : ''}{contribution.contribution.toFixed(2)}
+                <p className="mt-1 text-[11px] text-gray-500">Output space: {explanation.output_space} · Contract: {explanation.contract_version}</p>
+                <ul className="mt-3 space-y-2">
+                  {explanation.contributions.map((contribution) => (
+                    <li key={contribution.feature_name} className="flex items-start justify-between gap-3 rounded-lg border border-gray-100 px-2.5 py-2 text-[12px]">
+                      <span className="min-w-0 text-gray-700">
+                        <span className="font-semibold text-gray-900">{contribution.feature_name}</span>
+                        <span className="ml-2 text-gray-500">value {contribution.feature_value}</span>
+                        <span className="mt-0.5 block text-[11px] text-gray-500">
+                          {contribution.direction === 'fraud' ? 'Pushes toward fraud' : contribution.direction === 'legitimate' ? 'Pushes toward legitimate' : 'Neutral'}
                         </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                      </span>
+                      <span className={cn('shrink-0 font-semibold', contribution.shap_value > 0 ? 'text-red-600' : contribution.shap_value < 0 ? 'text-emerald-600' : 'text-gray-500')}>
+                        {contribution.shap_value > 0 ? '+' : ''}{contribution.shap_value.toFixed(4)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
             <p className="mt-4 border-t border-gray-200 pt-3 text-[13px] leading-6 text-gray-700">
@@ -423,7 +431,11 @@ export function TransactionDrawer({ transaction, open, onClose }: TransactionDra
           icon={MessageSquareTextIcon}
           description="Plain-language reasons, ranked by how much each one moved the score.">
           
-          <ExplanationCards factors={transaction.shap} />
+          {explanation ? (
+            <p className="text-[13px] text-gray-600">The explanation above shows the persisted transaction features and their signed SHAP contributions.</p>
+          ) : (
+            <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13px] text-gray-600">Explanation unavailable for this transaction.</p>
+          )}
         </Section>
 
         <Section
