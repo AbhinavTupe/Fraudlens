@@ -8,13 +8,12 @@ import numpy as np
 import pandas as pd
 import shap
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-ARTIFACT_PATH = REPO_ROOT / 'backend' / 'app' / 'ml' / 'artifacts' / 'xgb_fraud_v2_2_2.joblib'
+CANONICAL_ARTIFACT_PATH = Path(__file__).resolve().parent / 'artifacts' / 'xgb_fraud_v2_2_2.joblib'
 
 
 class FrozenV22ModelExplainer:
     def __init__(self, artifact_path: str | Path | None = None) -> None:
-        self.artifact_path = Path(artifact_path) if artifact_path is not None else ARTIFACT_PATH
+        self.artifact_path = Path(artifact_path) if artifact_path is not None else CANONICAL_ARTIFACT_PATH
         self.artifact = self._load_artifact(self.artifact_path)
         self.model = self.artifact['model']
         self.model_version = self.artifact['model_version']

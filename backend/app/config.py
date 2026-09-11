@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,8 +21,8 @@ class Settings(BaseSettings):
     # ===========================
     # Backend
     # ===========================
-    BACKEND_HOST: str
-    BACKEND_PORT: int
+    BACKEND_HOST: str = "0.0.0.0"
+    BACKEND_PORT: int = Field(default=8000, validation_alias=AliasChoices("BACKEND_PORT", "PORT"))
 
     # ===========================
     # Frontend

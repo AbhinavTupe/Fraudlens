@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.crud.ml_model import MLModelRepository
+from app.ml.shap_explainer import CANONICAL_ARTIFACT_PATH
 from app.models import MLModel
 
 
@@ -23,8 +24,8 @@ class MLModelService:
 
     @lru_cache(maxsize=1)
     def get_cached_model(self):
-        model_path = self.settings.MODEL_PATH
-        if not model_path or not os.path.exists(model_path):
+        model_path = CANONICAL_ARTIFACT_PATH
+        if not os.path.exists(model_path):
             raise MLModelNotAvailableError(f"Model path {model_path} is not available")
         with open(model_path, "rb") as handle:
             return pickle.load(handle)
