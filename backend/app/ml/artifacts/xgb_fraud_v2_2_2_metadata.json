@@ -1,0 +1,280 @@
+{
+  "artifact_name": "xgb_fraud_v2_2_2.joblib",
+  "algorithm": "XGBoostClassifier",
+  "contract_version": "fraudlens-v2.2.1",
+  "model_version": "fraudlens-xgb-v2.2.2",
+  "model_type": "XGBClassifier",
+  "feature_columns": [
+    "TransactionAmt",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C14",
+    "ProductCD_C",
+    "ProductCD_H",
+    "ProductCD_R",
+    "ProductCD_S",
+    "ProductCD_W"
+  ],
+  "feature_order": [
+    "TransactionAmt",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C14",
+    "ProductCD_C",
+    "ProductCD_H",
+    "ProductCD_R",
+    "ProductCD_S",
+    "ProductCD_W"
+  ],
+  "raw_feature_list": [
+    "TransactionAmt",
+    "ProductCD",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C14"
+  ],
+  "numeric_columns": [
+    "TransactionAmt",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+    "C9",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C14"
+  ],
+  "categorical_columns": [
+    "ProductCD"
+  ],
+  "threshold": 0.883991003036499,
+  "selected_threshold": 0.883991003036499,
+  "threshold_selection_dataset": "validation",
+  "threshold_selection_method": "maximum F1",
+  "validation_pr_auc": 0.4805756431335591,
+  "validation_roc_auc": 0.8684905729059123,
+  "validation_precision": 0.7071186440677966,
+  "validation_recall": 0.39313984168865435,
+  "validation_f1": 0.5053294573643411,
+  "validation_confusion_matrix": [
+    [
+      66181,
+      432
+    ],
+    [
+      1610,
+      1043
+    ]
+  ],
+  "holdout_pr_auc": 0.4131630786777144,
+  "holdout_roc_auc": 0.8368438684901001,
+  "holdout_precision": 0.5951199338296113,
+  "holdout_recall": 0.3376349131862975,
+  "holdout_f1": 0.4308383233532934,
+  "holdout_confusion_matrix": [
+    [
+      119168,
+      979
+    ],
+    [
+      2823,
+      1439
+    ]
+  ],
+  "hyperparameters": {
+    "objective": "binary:logistic",
+    "base_score": null,
+    "booster": null,
+    "callbacks": null,
+    "colsample_bylevel": null,
+    "colsample_bynode": null,
+    "colsample_bytree": 0.8,
+    "device": null,
+    "early_stopping_rounds": null,
+    "enable_categorical": false,
+    "eval_metric": "aucpr",
+    "feature_types": null,
+    "gamma": null,
+    "grow_policy": null,
+    "importance_type": null,
+    "interaction_constraints": null,
+    "learning_rate": 0.03,
+    "max_bin": null,
+    "max_cat_threshold": null,
+    "max_cat_to_onehot": null,
+    "max_delta_step": null,
+    "max_depth": 5,
+    "max_leaves": null,
+    "min_child_weight": null,
+    "missing": NaN,
+    "monotone_constraints": null,
+    "multi_strategy": null,
+    "n_estimators": 600,
+    "n_jobs": -1,
+    "num_parallel_tree": null,
+    "random_state": 42,
+    "reg_alpha": null,
+    "reg_lambda": null,
+    "sampling_method": null,
+    "scale_pos_weight": 27.867107942973522,
+    "subsample": 0.8,
+    "tree_method": "hist",
+    "validate_parameters": null,
+    "verbosity": null
+  },
+  "scale_pos_weight": 27.867107942973522,
+  "feature_contract": {
+    "numeric": [
+      "TransactionAmt",
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14"
+    ],
+    "categorical": [
+      "ProductCD"
+    ],
+    "excluded": [
+      "TransactionDT",
+      "TransactionID",
+      "DeviceType",
+      "card1..card6",
+      "addr1..addr2",
+      "id_*"
+    ]
+  },
+  "splits": {
+    "training_rows": 396865,
+    "validation_rows": 69266,
+    "holdout_rows": 124409,
+    "frozen_train_end": 396865,
+    "frozen_validation_end": 466131
+  },
+  "product_categories": [
+    "C",
+    "H",
+    "R",
+    "S",
+    "W"
+  ],
+  "preprocessing": {
+    "numeric_medians": {
+      "TransactionAmt": 68.97,
+      "C1": 1.0,
+      "C2": 1.0,
+      "C3": 0.0,
+      "C4": 0.0,
+      "C5": 0.0,
+      "C6": 1.0,
+      "C7": 0.0,
+      "C8": 0.0,
+      "C9": 1.0,
+      "C10": 0.0,
+      "C11": 1.0,
+      "C12": 0.0,
+      "C13": 2.0,
+      "C14": 1.0
+    },
+    "product_missing_token": "MISSING",
+    "product_unknown_token": "UNSEEN_FRAUDLENS_CATEGORY",
+    "unknown_policy": "all_product_columns_zero"
+  },
+  "candidate_search": {
+    "candidate_count": 3,
+    "limit": 12,
+    "metric": "validation PR-AUC",
+    "selected": {
+      "max_depth": 5,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8
+    },
+    "results": [
+      {
+        "params": {
+          "max_depth": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "subsample": 0.8,
+          "colsample_bytree": 0.9
+        },
+        "validation_pr_auc": null,
+        "selection_winner": false
+      },
+      {
+        "params": {
+          "max_depth": 5,
+          "learning_rate": 0.03,
+          "n_estimators": 600,
+          "subsample": 0.8,
+          "colsample_bytree": 0.8
+        },
+        "validation_pr_auc": 0.4805756431335591,
+        "selection_winner": true
+      },
+      {
+        "params": {
+          "max_depth": 3,
+          "learning_rate": 0.07,
+          "n_estimators": 500,
+          "subsample": 1.0,
+          "colsample_bytree": 0.8
+        },
+        "validation_pr_auc": null,
+        "selection_winner": false
+      }
+    ]
+  },
+  "holdout_locked": true,
+  "notes": "Artifact repaired/repacked to match the frozen V2.2.1 feature contract and V2.2.2 model identity without retraining the already-valid XGBoost model."
+}
