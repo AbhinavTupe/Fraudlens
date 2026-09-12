@@ -58,11 +58,12 @@ class TransactionService:
         payment_method: Optional[str],
         transaction_timestamp: Optional[datetime] = None,
         status: TransactionStatus = TransactionStatus.PENDING,
+        validate_customer: bool = True,
     ) -> Transaction:
         existing = self.transaction_repo.get_by_reference(db, transaction_reference)
         if existing is not None:
             raise DuplicateTransactionError(f"Transaction {transaction_reference} already exists")
-        if customer_id is not None and self.user_repo.get_by_id(db, customer_id) is None:
+        if validate_customer and customer_id is not None and self.user_repo.get_by_id(db, customer_id) is None:
             raise TransactionNotFoundError(f"Customer {customer_id} was not found")
         payload = {
             "transaction_reference": transaction_reference,

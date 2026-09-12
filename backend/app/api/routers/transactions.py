@@ -151,10 +151,13 @@ def batch_upload_transactions(
                 location=row["location"],
                 payment_method=row["payment_method"],
                 status=row["status"],
+                validate_customer=False,
             )
             imported_ids.append(str(transaction.id))
     except DuplicateTransactionError as exc:
         return _batch_upload_response(row_count, 0, [{"row_number": 0, "field": "transaction_reference", "error": str(exc)}], [])
+    except TransactionNotFoundError as exc:
+        return _batch_upload_response(row_count, 0, [{"row_number": 0, "field": "customer_id", "error": str(exc)}], [])
 
     return _batch_upload_response(row_count, len(imported_ids), [], imported_ids)
 

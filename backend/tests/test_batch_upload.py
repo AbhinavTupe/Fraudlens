@@ -71,6 +71,42 @@ def test_batch_upload_accepts_valid_csv_and_persists_rows(client):
     assert len(payload["imported_ids"]) == 2
 
 
+def test_batch_upload_preserves_customer_ids_without_existing_users(client):
+    unknown_customer_id = uuid4()
+    valid_customer_id = uuid4()
+    rows = [
+        "transaction_reference,amount,currency,merchant,merchant_category,customer_id,transaction_type,transaction_timestamp,location,payment_method,status",
+        f"batch-unknown-customer-{uuid4().hex},99.99,USD,Baseline Merchant,Retail,{unknown_customer_id},purchase,2026-08-12T10:00:00Z,Boston,card,pending",
+        f"batch-valid-customer-{uuid4().hex},45.50,USD,Northwind,Electronics,{valid_customer_id},wire,2026-08-12T11:30:00+00:00,Denver,bank,approved",
+        f"batch-null-customer-{uuid4().hex},12.00,USD,No Customer,Retail,,purchase,2026-08-12T12:00:00Z,Seattle,card,pending",
+    ]
+
+    response = client.post(
+        "/api/transactions/batch-upload",
+        files=_csv_payload(rows),
+        headers={"Authorization": f"Bearer {_token()}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["successfully_imported"] == 3
+
+
+def test_batch_upload_rejects_malformed_customer_id(client):
+    rows = [
+        "transaction_reference,amount,currency,merchant,merchant_category,customer_id,transaction_type,transaction_timestamp,location,payment_method,status",
+        f"batch-invalid-customer-{uuid4().hex},10.00,USD,Example Merchant,Retail,not-a-uuid,purchase,2026-08-12T10:00:00Z,Boston,card,pending",
+    ]
+
+    response = client.post(
+        "/api/transactions/batch-upload",
+        files=_csv_payload(rows),
+        headers={"Authorization": f"Bearer {_token()}"},
+    )
+
+    assert response.status_code == 400
+    assert any(err["field"] == "customer_id" for err in response.json()["validation_errors"])
+
+
 def test_batch_upload_rejects_missing_required_column(client):
     rows = [
         "transaction_reference,amount,currency,merchant,transaction_timestamp",
@@ -198,3 +234,27 @@ def test_create_transaction_endpoint_still_works(client):
 
     assert response.status_code == 201
     assert response.json()["transaction_reference"] == payload["transaction_reference"]
+
+
+def test_create_transaction_still_rejects_unknown_customer(client):
+    payload = {
+        "transaction_reference": f"single-unknown-customer-{uuid4().hex}",
+        "amount": "14.75",
+        "currency": "USD",
+        "merchant": "Example Merchant",
+        "merchant_category": "Retail",
+        "customer_id": str(uuid4()),
+        "transaction_type": "purchase",
+        "transaction_timestamp": "2026-08-12T10:00:00Z",
+        "location": "Boston",
+        "payment_method": "card",
+        "status": "pending",
+    }
+
+    response = client.post(
+        "/api/transactions",
+        json=payload,
+        headers={"Authorization": f"Bearer {_token()}"},
+    )
+
+    assert response.status_code == 404
